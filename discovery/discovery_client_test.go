@@ -212,6 +212,39 @@ func TestTimeoutIsSet(t *testing.T) {
 	assert.Equal(t, defaultTimeout, cfg.Timeout)
 }
 
+func TestIsGroupDiscoveryFailedError(t *testing.T) {
+	defaultErr := ErrGroupDiscoveryFailed{
+		Groups: map[schema.GroupVersion]error{
+			{
+				Group:   "apps",
+				Version: "v1",
+			}: fmt.Errorf("resource does not exist"),
+		},
+	}
+
+	testCases := []struct {
+		desc string
+		err  error
+	}{
+		{
+			desc: "should match error",
+			err:  &defaultErr,
+		},
+		{
+			desc: "should unwrap error tree and match",
+			err:  fmt.Errorf("wrapped error %w", fmt.Errorf("inner %w", &defaultErr)),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			if !IsGroupDiscoveryFailedError(tc.err) {
+				t.Errorf("expected error to be ErrGroupDiscoveryFailed")
+			}
+		})
+	}
+}
+
 func TestGetServerResourcesForGroupVersion(t *testing.T) {
 	stable := metav1.APIResourceList{
 		GroupVersion: "v1",
